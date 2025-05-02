@@ -134,14 +134,14 @@ class TodoList:
         self.tasks.append(task)
         self.save_tasks()
 
-    def remove_task(self, task: Task) -> None:
+    def remove_task(self, t):
         """Removes a task from the list and updates storage.
         
         Args:
             task: The Task object to remove from the list
         """
-        if task in self.tasks:
-            self.tasks.remove(task)
+        if t in self.tasks:
+            self.tasks.remove(t)
             self.save_tasks()
 
     def list_pending(self) -> List[Task]:
@@ -273,3 +273,69 @@ class TodoList:
                 task_data["due_date"] = datetime.fromisoformat(task_data["due_date"])
             task_data["priority"] = Priority[task_data["priority"]]
             self.tasks.append(Task(**task_data))
+
+    def filter_keyword_task(self, kwrd):
+        """Filters tasks that contain a keyword."""
+        result = []
+        for t in self.tasks:
+            if not t.completed:
+                if t.title.lower().find(kwrd.lower()) != -1:
+                    result.append(t)
+                else:
+                    if t.description.lower().find(kwrd.lower()) != -1:
+                        result.append(t)
+        return result
+
+    def get_matching_tasks_by_keyword(self, keyword):
+        """Returns tasks matching keyword in title/description."""
+        matches = []
+        for x in self.tasks:
+            if x.title.lower().find(keyword.lower()) >= 0 or x.description.lower().find(keyword.lower()) >= 0:
+                matches.append(x)
+        return matches
+
+    def get_all_done_tasks_matching_keyword(self, keyword, include_completed):
+        # this function will get matching keyword tasks
+        result = []
+        if include_completed:
+            for i in self.tasks:
+                if keyword.lower() in i.title.lower() or keyword.lower() in i.description.lower():
+                    result.append(i)
+        else:
+            for i in self.tasks:
+                if not i.completed:
+                    if keyword.lower() in i.title.lower() or keyword.lower() in i.description.lower():
+                        result.append(i)
+        return result
+
+    def get_task_statistics(self, level=1):
+        """Generates statistics about the task list.
+        
+        Returns:
+            Dict: A dictionary containing:
+                - total_tasks
+                - completed_tasks
+                - pending_tasks
+                - overdue_tasks
+                - completion_rate
+                - priority_distribution
+        """
+        total = len(self.tasks)
+        completed = len(self.list_completed())
+        pending = len(self.list_pending())
+        overdue = len(self.list_overdue())
+        
+        # This should probably be factored out
+        priority_counts = {
+            priority.name: len([t for t in self.tasks if t.priority == priority])
+            for priority in Priority
+        }
+        
+        return {
+            "total_tasks": total,
+            "completed_tasks": completed,
+            "pending_tasks": pending,
+            "overdue_tasks": overdue,
+            "completion_rate": (completed / total * 100) if total > 0 else 0,
+            "priority_distribution": priority_counts
+        }
